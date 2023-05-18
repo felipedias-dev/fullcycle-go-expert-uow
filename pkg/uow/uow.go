@@ -39,6 +39,18 @@ func (u *Uow) Unregister(name string) {
 	delete(u.Repositories, name)
 }
 
+func (u *Uow) GetRepository(ctx context.Context, name string) (interface{}, error) {
+	if u.Tx == nil {
+		tx, err := u.DB.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		u.Tx = tx
+	}
+	repo := u.Repositories[name](u.Tx)
+	return repo, nil
+}
+
 func (u *Uow) Do(ctx context.Context, fn func(uow *Uow) error) error {
 	if u.Tx != nil {
 		return fmt.Errorf("transaction already started")
@@ -51,7 +63,9 @@ func (u *Uow) Do(ctx context.Context, fn func(uow *Uow) error) error {
 
 	err = fn(u)
 	if err != nil {
-		u.Rollback()
+		if errRb := u.Rollback(); errRb != nil {
+			return fmt.Errorf("original error: %s\nrollback error: %s", err.Error(), errRb.Error())
+		}
 		return err
 	}
 
