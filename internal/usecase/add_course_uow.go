@@ -25,7 +25,7 @@ func NewAddCourseUowUseCase(uow uow.UowInterface) *AddCourseUowUseCase {
 }
 
 func (a *AddCourseUowUseCase) Execute(ctx context.Context, input InputUowUseCase) error {
-	return a.Uow.Do(ctx, func(uow uow.UowInterface) error {
+	return a.Uow.Do(ctx, func(uow *uow.Uow) error {
 		category := entity.Category{
 			Name: input.CategoryName,
 		}
@@ -36,7 +36,8 @@ func (a *AddCourseUowUseCase) Execute(ctx context.Context, input InputUowUseCase
 		}
 
 		course := entity.Course{
-			Name: input.CourseName,
+			Name:       input.CourseName,
+			CategoryID: input.CourseCategoryID,
 		}
 		repoCourse := a.getCourseRepository(ctx)
 		err = repoCourse.Insert(ctx, course)
